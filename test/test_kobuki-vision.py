@@ -2,7 +2,7 @@
 Tests for `kobuki-vision` module.
 """
 import pytest
-from kobuki-vision import kobuki-vision
+from KobukiVision import KobukiVision
 
 
 class TestKobuki-vision(object):
