@@ -5,7 +5,7 @@ import pytest
 from KobukiVision import KobukiVision
 
 
-class TestKobuki-vision(object):
+class TestKobukiVision(object):
 
     @classmethod
     def setup_class(cls):
