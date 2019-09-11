@@ -10,10 +10,10 @@ Get Started!
 Ready to contribute? Here's how to set up `kobuki-vision` for
 local development.
 
-1. Fork_ the `kobuki-vision` repo on GitHub.
+1. Open terminal.
 2. Clone your fork locally::
 
-    $ git clone git@github.com:your_name_here/kobuki-vision.git
+    $ git clone git@github.com:HvA-Robotics/kobuki-vision.git
 
 3. Create a branch for local development::
 
