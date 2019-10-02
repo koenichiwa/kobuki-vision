@@ -18,7 +18,9 @@ void depthPointsCallback(const sensor_msgs::PointCloud2 &msg) {
 }
 
 void depthRegisteredPointsCallback(const sensor_msgs::PointCloud2 &msg) {
-    cout << msg << endl;
+    for (int i = 0; i < sizeof(msg.data); i++) {
+        cout << msg.data[i] << endl;
+    }
 }
 
 void rawImageCallback(const sensor_msgs::Image &image) {
@@ -39,11 +41,11 @@ int main(int argc, char **argv) {
     NodeHandle n("~");
     Rate loop_rate(1);
 
-    Subscriber depthPointsSub = n.subscribe("/camera/depth/points", 10, depthPointsCallback);
-    Subscriber depthPointsRegisteredSub = n.subscribe("/camera/depth_registered/points", 10, depthRegisteredPointsCallback);
-    Subscriber imageSub = n.subscribe("/camera/depth/image_raw", 10, rawImageCallback);
-    Subscriber imageRecSub = n.subscribe("/camera/depth/image_rect_raw", 10, rawRectImageCallback);
-    Subscriber camInfoSub = n.subscribe("/camera/depth/camera_info", 10, cameraInfoCallback);
+//    Subscriber depthPointsSub = n.subscribe("/camera/depth/points", 10, depthPointsCallback);
+    Subscriber depthPointsRegisteredSub = n.subscribe("/camera/depth_registered/points", 10,
+                                                      depthRegisteredPointsCallback);
+//    Subscriber imageSub = n.subscribe("/camera/depth/image_raw", 10, rawImageCallback);
+//    Subscriber imageRecSub = n.subscribe("/camera/depth/image_rect_raw", 10, rawRectImageCallback);
 
     while (ok()) {
         spinOnce();
