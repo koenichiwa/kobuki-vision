@@ -45,3 +45,5 @@ docs/_build
 cmake-build-debug/
 .idea
 *.iml
+build/
+devel/
