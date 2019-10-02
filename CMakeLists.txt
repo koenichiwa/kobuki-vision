@@ -11,7 +11,7 @@ catkin_package(
         #  CATKIN_DEPENDS roscpp std_msgs
         #  DEPENDS system_lib
 )
-set(SOURCE_FILES ${WS_DIR}/src/test_node/test_node.cpp)
+set(SOURCE_FILES ${WS_DIR}/src/nodes/camera_node.cpp)
 add_executable(${PROJECT_NAME}_node ${SOURCE_FILES})
 include_directories(${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBS})
