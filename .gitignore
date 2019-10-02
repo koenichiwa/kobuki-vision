@@ -42,6 +42,6 @@ output/*/index.html
 # Sphinx
 docs/_build
 
-cmake-build-debug
+cmake-build-debug/
 .idea
 *.iml

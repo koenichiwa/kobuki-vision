@@ -6,12 +6,13 @@ set(WS_DIR workspace/)
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs)
 find_package(OpenCV REQUIRED)
 catkin_package(
-        #  INCLUDE_DIRS include
-        #  LIBRARIES vision
-        #  CATKIN_DEPENDS roscpp std_msgs
-        #  DEPENDS system_lib
+        sensor_msgs
+        cv_bridge
+        roscpp
+        std_msgs
+        image_transport
 )
-set(SOURCE_FILES ${WS_DIR}/src/test_node/test_node.cpp)
+set(SOURCE_FILES ${WS_DIR}/src/)
 add_executable(${PROJECT_NAME}_node ${SOURCE_FILES})
 include_directories(${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${OpenCV_LIBS})
