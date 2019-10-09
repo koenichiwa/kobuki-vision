@@ -18,14 +18,14 @@ using namespace cv_bridge;
 
 
 void imageCb(const sensor_msgs::Image &msg) {
-    cv_bridge::CvImagePtr cv_ptr;
-    try
-    {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_16UC1);
-        imshow("BLA", cv_ptr->image);
+    CvImagePtr cv_ptr;
+    try {
+        cout << msg.encoding << endl;
+        cv_ptr = toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
+        imshow("Window", cv_ptr->image);
+        waitKey(0);
     }
-    catch (cv_bridge::Exception& e)
-    {
+    catch (cv_bridge::Exception &e) {
         ROS_ERROR("cv_bridge exception: %s", e.what());
     }
 }
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 //    Subscriber depthPointsSub = n.subscribe("/camera/depth/points", 10, depthPointsCallback);
 //    Subscriber depthPointsRegisteredSub = n.subscribe("/camera/depth_registered/points", 10,
 //                                                      depthRegisteredPointsCallback);
-    Subscriber imageSub = n.subscribe("/camera/depth/image_raw", 10, rawImageCallback);
+    Subscriber imageSub = n.subscribe("/camera/rgb/image_raw", 10, rawImageCallback);
 //    Subscriber imageRecSub = n.subscribe("/camera/depth/image_rect_raw", 10, rawRectImageCallback);
 
     while (ok()) {
