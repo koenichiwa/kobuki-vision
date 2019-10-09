@@ -60,11 +60,11 @@ public:
         image_pub_.publish(cv_ptr->toImageMsg());
     }
 };
-//
-//int main(int argc, char** argv)
-//{
-//    ros::init(argc, argv, "image_converter");
-//    ImageConverter ic;
-//    ros::spin();
-//    return 0;
-//}
+
+int main(int argc, char** argv)
+{
+    ros::init(argc, argv, "image_converter");
+    ImageConverter ic;
+    ros::spin();
+    return 0;
+}
