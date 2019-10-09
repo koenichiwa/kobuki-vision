@@ -22,7 +22,18 @@ void imageCb(const sensor_msgs::Image &msg) {
     try {
         cout << msg.encoding << endl;
         cv_ptr = toCvCopy(msg, sensor_msgs::image_encodings::RGB8);
-        imshow("Window", cv_ptr->image);
+
+        Mat image;
+
+        cvtColor(cv_ptr->image,image,COLOR_BGR2GRAY);
+        Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create();
+        vector<KeyPoint> keypoints;
+        detector->detect(image,keypoints);
+
+        Mat imk;
+
+        drawKeypoints(image, keypoints, imk, Scalar(0,0,255),DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+        imshow("Window", imk);
         waitKey(0);
     }
     catch (cv_bridge::Exception &e) {
