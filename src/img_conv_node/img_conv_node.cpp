@@ -1,15 +1,13 @@
 //
-// Created by mellow on 02-10-19.
+// Created by Melle Toxopeus on 02-10-19.
+// This program converts the ROS images recieved from the /camera/rgb/image_raw topic.
+// Into Opencv images we can use for object detection.
 //
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-static const std::string OPENCV_WINDOW = "Image window";
 
 class ImageConverter
 {
@@ -23,16 +21,9 @@ public:
             : it_(nh_)
     {
         // Subscrive to input video feed and publish output video feed
-        image_sub_ = it_.subscribe("/camera/image_raw", 1,
+        image_sub_ = it_.subscribe("/camera/rgb/image_raw", 1,
                                    &ImageConverter::imageCb, this);
         image_pub_ = it_.advertise("/image_converter/output_video", 1);
-
-        cv::namedWindow(OPENCV_WINDOW);
-    }
-
-    ~ImageConverter()
-    {
-        cv::destroyWindow(OPENCV_WINDOW);
     }
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -47,14 +38,6 @@ public:
             ROS_ERROR("cv_bridge exception: %s", e.what());
             return;
         }
-
-        // Draw an example circle on the video stream
-        if (cv_ptr->image.rows > 60 && cv_ptr->image.cols > 60)
-            cv::circle(cv_ptr->image, cv::Point(50, 50), 10, CV_RGB(255,0,0));
-
-        // Update GUI Window
-        cv::imshow(OPENCV_WINDOW, cv_ptr->image);
-        cv::waitKey(3);
 
         // Output modified video stream
         image_pub_.publish(cv_ptr->toImageMsg());
