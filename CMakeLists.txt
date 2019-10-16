@@ -10,11 +10,9 @@ find_package(PCL REQUIRED COMPONENTS)
 
 
 set(CONV_NODE_SRC src/img_conv_node/img_conv_node.cpp)
-set(CAMERA_NODE_SRC src/camera_node/camera_node.cpp)
 set(DTO_NODE_SRC src/dto_node/dto_node.cpp)
 
 #Exectable aanmaken
-add_executable(camera_node camera__node/ ${CAMERA_NODE_SRC})
 add_executable(img_conv_node img_conv_node/ ${CONV_NODE_SRC})
 add_executable(dto_node dto_node/ ${DTO_NODE_SRC})
 
@@ -24,4 +22,4 @@ include_directories(${catkin_INCLUDE_DIRS}  ${PCL_INCLUDE_DIRS})
 
 #dit moet ook..
 target_link_libraries(img_conv_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
-target_link_libraries(camera_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(dto_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
