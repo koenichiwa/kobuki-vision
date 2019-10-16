@@ -1,12 +1,13 @@
 //
-// Created by mellow on 02-10-19.
+// Created by Melle Toxopeus on 02-10-19.
+// This program converts the ROS images recieved from the /camera/rgb/image_raw topic.
+// Into Opencv images we can use for object detection.
 //
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
-#include <opencv2/imgproc/imgproc.hpp>
 
 class ImageConverter
 {
@@ -40,7 +41,6 @@ public:
 
         // Output modified video stream
         image_pub_.publish(cv_ptr->toImageMsg());
-        std::cout << "Published!!";
     }
 };
 
