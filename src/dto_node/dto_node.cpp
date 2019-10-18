@@ -8,8 +8,8 @@
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
 #include "message_filters/time_synchronizer.h"
+#include "vision/ObjectPosition.h"
 #include "message_filters/subscriber.h"
-
 #define MAX_QUEUE_SIZE 10
 
 using namespace std;
@@ -17,12 +17,13 @@ using namespace pcl;
 using namespace ros;
 using namespace sensor_msgs;
 using namespace message_filters;
+using namespace vision;
 
 
-void callBack(const PointCloud2 &pointCloud, const Image &image) {
+void callBack(const PointCloud2 &pointCloud, const ObjectPosition &pos) {
     PointCloud<PointXYZ> pc;
     fromROSMsg(pointCloud, pc);
-    PointXYZ p = pc.at(image.width / 2, image.height / 2);
+    PointXYZ p = pc.at(pos.x, pos.y);
     cout << "X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
 }
 
@@ -32,11 +33,11 @@ int main(int argc, char **argv) {
     Rate loop_rate(1);
 
     message_filters::Subscriber<PointCloud2> depthPointsSub(n, "/camera/depth/points", MAX_QUEUE_SIZE);
-    message_filters::Subscriber<Image> imageSub(n, "/camera/rgb/image_raw", MAX_QUEUE_SIZE);
+    message_filters::Subscriber<ObjectPosition> objPosSub(n, "/some/object/position", MAX_QUEUE_SIZE);
 
-    TimeSynchronizer<PointCloud2, Image> sync(depthPointsSub, imageSub, MAX_QUEUE_SIZE);
+    TimeSynchronizer<PointCloud2, ObjectPosition> sync(depthPointsSub, objPosSub, MAX_QUEUE_SIZE);
     sync.registerCallback(boost::bind(&callBack, _1, _2));
-
+//
     while (ok()) {
         spinOnce();
         fflush(stdout);
