@@ -7,41 +7,35 @@
 #include <pcl/point_types.h>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
-#include "sensor_msgs/PointCloud2.h"
+#include "message_filters/time_synchronizer.h"
+#include "message_filters/subscriber.h"
 
+#define MAX_QUEUE_SIZE 10
 
 using namespace std;
 using namespace pcl;
 using namespace ros;
 using namespace sensor_msgs;
+using namespace message_filters;
 
-class DistanceToObject{
 
-private:
-    int Xpos = 0;
-    int Ypos = 0;
+void callBack(const PointCloud2 &pointCloud, const Image &image) {
+    PointCloud<PointXYZ> pc;
+    fromROSMsg(pointCloud, pc);
+    PointXYZ p = pc.at(image.width / 2, image.height / 2);
+    cout << "X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+}
 
-public:
-    void depthPointsCallback(const PointCloud2 &msg) {
-        PointCloud<PointXYZ> pc;fromROSMsg(msg, pc);
-        PointXYZ p = pc.at(this->Xpos , this->Ypos);
-        cout << "X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
-    }
-
-    void XYcallback(int i){
-
-    }
-
-};
-
-int main(int argc, char **argv){
+int main(int argc, char **argv) {
     init(argc, argv, "dto_node");
     NodeHandle n("~");
     Rate loop_rate(1);
 
-    DistanceToObject DTO;
-    Subscriber depthPointsSub = n.subscribe("/camera/depth/points", 10, &DistanceToObject::depthPointsCallback, &DTO);
-    Subscriber XYsub = n.subscribe("/get/x/y", 10, &DistanceToObject::depthPointsCallback, &DTO);
+    message_filters::Subscriber<PointCloud2> depthPointsSub(n, "/camera/depth/points", MAX_QUEUE_SIZE);
+    message_filters::Subscriber<Image> imageSub(n, "/camera/rgb/image_raw", MAX_QUEUE_SIZE);
+
+    TimeSynchronizer<PointCloud2, Image> sync(depthPointsSub, imageSub, MAX_QUEUE_SIZE);
+    sync.registerCallback(boost::bind(&callBack, _1, _2));
 
     while (ok()) {
         spinOnce();
