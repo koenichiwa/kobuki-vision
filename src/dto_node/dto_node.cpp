@@ -50,10 +50,13 @@ void callBack(const PointCloud2ConstPtr &pointCloud, const ImageConstPtr &im) {
                 Rect r = peopleRectangles.at(i);
                 PointXYZ p = pc.at(r.x, r.y);
                 cout << "Persoon " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+//                rectangle(cv_ptr->image, peopleRectangles[i], cv::Scalar(0,0,255), 3);
             }
         } else {
             cout << "Er zijn geen personen gevonden..." << endl;
         }
+//        imshow("Personen", cv_ptr->image);
+//        waitKey(0);
     }
     catch (cv_bridge::Exception &e) {
         ROS_ERROR("cv_bridge exception: %s", e.what());
