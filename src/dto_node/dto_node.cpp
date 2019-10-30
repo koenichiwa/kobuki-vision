@@ -12,6 +12,7 @@
 #include "message_filters/subscriber.h"
 #include "cv_bridge/cv_bridge.h"
 #include "opencv2/objdetect.hpp"
+#include <message_filters/sync_policies/approximate_time.h>
 
 #define MAX_QUEUE_SIZE 10
 
@@ -20,7 +21,6 @@ using namespace pcl;
 using namespace ros;
 using namespace sensor_msgs;
 using namespace message_filters;
-using namespace vision;
 using namespace cv_bridge;
 using namespace cv;
 
@@ -42,7 +42,7 @@ void callBack(const PointCloud2ConstPtr &pointCloud, const ImageConstPtr &im) {
             for (size_t i = 0; i < found.size(); i++) {
                 Rect r = found.at(i);
                 PointXYZ p = pc.at(r.x, r.y);
-                cout << "Persoon " << i << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+                cout << "Persoon " << i+1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
             }
         } else {
             cout << "Er zijn geen personen gevonden..." << endl;
@@ -62,7 +62,8 @@ int main(int argc, char **argv) {
     message_filters::Subscriber<PointCloud2> depthPointsSub(n, "/camera/depth/points", MAX_QUEUE_SIZE);
     message_filters::Subscriber<Image> imageSub(n, "/camera/rgb/image_raw", MAX_QUEUE_SIZE);
 
-    TimeSynchronizer<PointCloud2, Image> sync(depthPointsSub, imageSub, MAX_QUEUE_SIZE);
+    typedef sync_policies::ApproximateTime<PointCloud2, Image> syncPolicy;
+    Synchronizer<syncPolicy> sync(syncPolicy(10), depthPointsSub, imageSub);
     sync.registerCallback(boost::bind(&callBack, _1, _2));
 //
     while (ok()) {
