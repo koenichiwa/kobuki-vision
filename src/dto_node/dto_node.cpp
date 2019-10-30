@@ -54,6 +54,7 @@ void detectRedBall(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
 
     CascadeClassifier cascade;
     string cascade_name = "ball_cascade.xml";
+    cascade.load(cascade_name);
 
     Mat frame = cv_ptr -> image;
     std::vector<Rect> balls;
