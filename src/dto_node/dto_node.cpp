@@ -9,7 +9,6 @@
 #include <pcl/conversions.h>
 #include "opencv2/opencv.hpp"
 #include "message_filters/time_synchronizer.h"
-#include "vision/ObjectPosition.h"
 #include "message_filters/subscriber.h"
 #include "cv_bridge/cv_bridge.h"
 #include "opencv2/objdetect.hpp"
@@ -57,7 +56,7 @@ void callBack(const PointCloud2ConstPtr &pointCloud, const ImageConstPtr &im) {
 
 int main(int argc, char **argv) {
     init(argc, argv, "dto_node");
-    NodeHandle n("~");
+    NodeHandle n;
     Rate loop_rate(1);
 
     message_filters::Subscriber<PointCloud2> depthPointsSub(n, "/camera/depth/points", MAX_QUEUE_SIZE);
