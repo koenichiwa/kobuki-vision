@@ -23,6 +23,57 @@ using namespace message_filters;
 using namespace cv_bridge;
 using namespace cv;
 
+
+void detectPeople(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
+    //timely detect people, future should support more
+    HOGDescriptor hogDet;
+    hogDet.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector());
+    vector<Rect> peopleRectangles;
+    vector<double> weights;
+
+    //Save detected people into rectangles
+    hogDet.detectMultiScale(cv_ptr->image, peopleRectangles, weights);
+    if (!peopleRectangles.empty()) {
+        for (size_t i = 0; i < peopleRectangles.size(); i++) {
+            Rect r = peopleRectangles.at(i);
+            Point center = (r.br() + r.tl()) * 0.5;
+
+            PointXYZ p = pointCloud.at(center.x, center.y);
+            cout << "Persoon " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+//                rectangle(cv_ptr->image, peopleRectangles[i], cv::Scalar(0,0,255), 3);
+        }
+    } else {
+        cout << "Er zijn geen personen gevonden..." << endl;
+    }
+//        imshow("Personen", cv_ptr->image);
+//        waitKey(0);
+}
+
+
+void detectRedBall(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
+    Mat srcGray;
+    cvtColor(cv_ptr->image, srcGray, CV_BGR2GRAY);
+
+    /// Reduce the noise so we avoid false circle detection
+    GaussianBlur(srcGray, srcGray, Size(9, 9), 2, 2);
+
+    vector<Vec3f> circles;
+
+    /// Apply the Hough Transform to find the circles
+    HoughCircles(srcGray, circles, CV_HOUGH_GRADIENT, 1, srcGray.rows / 8, 200, 100, 0, 0);
+
+    if (!circles.empty()) {
+        for (unsigned long i = 0; i < circles.size(); i++) {
+            int x = circles[i][0];
+            int y = circles[i][1];
+            PointXYZ p = pointCloud.at(x, y);
+            cout << "Bal " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+        }
+    } else {
+        cout << "Bal niet gevonden." << endl;
+    }
+}
+
 /**
  * Takes a PointCloud and image, then calculates the distance towards detected objects.
  * @param pointCloud = astra's PointCloud2
@@ -37,32 +88,16 @@ void callBack(const PointCloud2ConstPtr &pointCloud, const ImageConstPtr &im) {
     try {
         cv_ptr = toCvCopy(*im, image_encodings::BGR8);
 
-        //timely detect people, future should support more
-        HOGDescriptor hogDet;
-        hogDet.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector());
-        vector<Rect> peopleRectangles;
-        vector<double> weights;
+        detectPeople(cv_ptr, pc);
+//        detectRedBall(cv_ptr, pc);
 
-        //Save detected people into rectangles
-        hogDet.detectMultiScale(cv_ptr->image, peopleRectangles, weights);
-        if (!peopleRectangles.empty()) {
-            for (size_t i = 0; i < peopleRectangles.size(); i++) {
-                Rect r = peopleRectangles.at(i);
-                PointXYZ p = pc.at(r.x, r.y);
-                cout << "Persoon " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
-//                rectangle(cv_ptr->image, peopleRectangles[i], cv::Scalar(0,0,255), 3);
-            }
-        } else {
-            cout << "Er zijn geen personen gevonden..." << endl;
-        }
-//        imshow("Personen", cv_ptr->image);
-//        waitKey(0);
     }
     catch (cv_bridge::Exception &e) {
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
 }
+
 
 int main(int argc, char **argv) {
     init(argc, argv, "dto_node");
