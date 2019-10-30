@@ -51,27 +51,53 @@ void detectPeople(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
 
 
 void detectRedBall(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
-    Mat srcGray;
-    cvtColor(cv_ptr->image, srcGray, CV_BGR2GRAY);
 
-    /// Reduce the noise so we avoid false circle detection
-    GaussianBlur(srcGray, srcGray, Size(9, 9), 2, 2);
+    CascadeClassifier cascade;
+    string cascade_name = "ball_cascade.xml";
 
-    vector<Vec3f> circles;
+    Mat frame = cv_ptr -> image;
+    std::vector<Rect> balls;
 
-    /// Apply the Hough Transform to find the circles
-    HoughCircles(srcGray, circles, CV_HOUGH_GRADIENT, 1, srcGray.rows / 8, 200, 100, 0, 0);
+    Mat frame_gray;
+    cvtColor( frame, frame_gray, CV_BGR2GRAY );
+    cascade.detectMultiScale(frame_gray,
+            balls,
+            1.1,
+            5,
+            8,
+            Size(16,16));
 
-    if (!circles.empty()) {
-        for (unsigned long i = 0; i < circles.size(); i++) {
-            int x = circles[i][0];
-            int y = circles[i][1];
-            PointXYZ p = pointCloud.at(x, y);
-            cout << "Bal " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
-        }
-    } else {
-        cout << "Bal niet gevonden." << endl;
+    for (int i = 0; i < balls.size(); ++i) {
+        Rect ball = balls.at(i);
+        Point center = (ball.br() + ball.tl()) * 0.5;
+        PointXYZ p = pointCloud.at(center.x, center.y);
+        cout << "Ball " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+
     }
+
+
+
+//    Mat srcGray;
+//    cvtColor(cv_ptr->image, srcGray, CV_BGR2GRAY);
+//
+//    /// Reduce the noise so we avoid false circle detection
+//    GaussianBlur(srcGray, srcGray, Size(9, 9), 2, 2);
+//
+//    vector<Vec3f> circles;
+//
+//    /// Apply the Hough Transform to find the circles
+//    HoughCircles(srcGray, circles, CV_HOUGH_GRADIENT, 1, srcGray.rows / 8, 200, 100, 0, 0);
+//
+//    if (!circles.empty()) {
+//        for (unsigned long i = 0; i < circles.size(); i++) {
+//            int x = circles[i][0];
+//            int y = circles[i][1];
+//            PointXYZ p = pointCloud.at(x, y);
+//            cout << "Bal " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+//        }
+//    } else {
+//        cout << "Bal niet gevonden." << endl;
+//    }
 }
 
 /**
