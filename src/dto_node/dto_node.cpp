@@ -8,6 +8,7 @@
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
 #include "opencv2/opencv.hpp"
+#include "opencv2/imgproc.hpp"
 #include "message_filters/subscriber.h"
 #include "cv_bridge/cv_bridge.h"
 #include "opencv2/objdetect.hpp"
@@ -22,6 +23,8 @@ using namespace sensor_msgs;
 using namespace message_filters;
 using namespace cv_bridge;
 using namespace cv;
+
+
 
 
 void detectPeople(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
@@ -51,54 +54,49 @@ void detectPeople(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
 
 
 void detectRedBall(const CvImagePtr &cv_ptr, PointCloud<PointXYZ> pointCloud) {
+    const Scalar RED_LOWER_HUE_LOWER_BOUNDS = Scalar(0, 100, 100);
+    const Scalar RED_LOWER_HUE_UPPER_BOUNDS = Scalar(10, 255, 255);
+    const Scalar RED_HIGHER_HUE_LOWER_BOUNDS = Scalar(160, 100, 100);
+    const Scalar RED_HIGHER_HUE_UPPER_BOUNDS = Scalar(179, 255, 255);
+    
+    Mat im = cv_ptr->image;
+    resize(im, im, Size(640, 480));//force default Orbbec's size
+    cvtColor(im, im, COLOR_BGR2HSV);
 
-    CascadeClassifier cascade;
-    string cascade_name = "ball_cascade.xml";
-    cascade.load(cascade_name);
+    //detect only the red ball(s) using hue
+    Mat lowerHue, higherHue, combinedHue;
+    inRange(im, RED_LOWER_HUE_LOWER_BOUNDS, RED_LOWER_HUE_UPPER_BOUNDS, lowerHue);
+    inRange(im, RED_HIGHER_HUE_LOWER_BOUNDS, RED_HIGHER_HUE_UPPER_BOUNDS, higherHue);
+    addWeighted(lowerHue, 1.0, higherHue, 1.0, 0.0, combinedHue);
 
-    Mat frame = cv_ptr -> image;
-    std::vector<Rect> balls;
+    //add some noise reduction
+    GaussianBlur(combinedHue, combinedHue, Size(9, 9), 2, 2);
+    medianBlur(combinedHue, combinedHue, 3);
 
-    Mat frame_gray;
-    cvtColor( frame, frame_gray, CV_BGR2GRAY );
-    cascade.detectMultiScale(frame_gray,
-            balls,
-            1.1,
-            5,
-            8,
-            Size(16,16));
+    //detect circles within the combined hue
+    vector<Vec3f> circles;
+    HoughCircles(combinedHue, circles, HOUGH_GRADIENT, 1.0, (double) combinedHue.rows / 16, 100.0, 30.0, 1, 125);
 
-    for (int i = 0; i < balls.size(); ++i) {
-        Rect ball = balls.at(i);
-        Point center = (ball.br() + ball.tl()) * 0.5;
-        PointXYZ p = pointCloud.at(center.x, center.y);
-        cout << "Ball " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
+    //convert image back to bgr (in case we'd like to see it)
+    cvtColor(im, im, COLOR_HSV2BGR);
 
+    if (!circles.empty()) {
+        for (unsigned long i = 0; i < circles.size(); i++) {
+            Vec3f vec = circles[i];
+            Point center(vec[0], vec[1]);
+            // circle center
+            circle(im, center, 1, Scalar(0, 100, 100), 3, 8, 0);
+            // circle outline
+            int radius = vec[2];
+            circle(im, center, radius, Scalar(255, 0, 255), 3, 8, 0);
+
+            PointXYZ pxyz = pointCloud.at(center.x, center.y);
+            cout << "Rode bal " << i << ": X = " << pxyz.x << ", Y = " << pxyz.y << ", Z = " << pxyz.z << endl;
+        }
+    } else {
+        cout << "Geen rode bal gevonden..." << endl;
     }
 
-
-
-//    Mat srcGray;
-//    cvtColor(cv_ptr->image, srcGray, CV_BGR2GRAY);
-//
-//    /// Reduce the noise so we avoid false circle detection
-//    GaussianBlur(srcGray, srcGray, Size(9, 9), 2, 2);
-//
-//    vector<Vec3f> circles;
-//
-//    /// Apply the Hough Transform to find the circles
-//    HoughCircles(srcGray, circles, CV_HOUGH_GRADIENT, 1, srcGray.rows / 8, 200, 100, 0, 0);
-//
-//    if (!circles.empty()) {
-//        for (unsigned long i = 0; i < circles.size(); i++) {
-//            int x = circles[i][0];
-//            int y = circles[i][1];
-//            PointXYZ p = pointCloud.at(x, y);
-//            cout << "Bal " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl;
-//        }
-//    } else {
-//        cout << "Bal niet gevonden." << endl;
-//    }
 }
 
 /**
@@ -115,8 +113,8 @@ void callBack(const PointCloud2ConstPtr &pointCloud, const ImageConstPtr &im) {
     try {
         cv_ptr = toCvCopy(*im, image_encodings::BGR8);
 
-        detectPeople(cv_ptr, pc);
-//        detectRedBall(cv_ptr, pc);
+//        detectPeople(cv_ptr, pc);
+        detectRedBall(cv_ptr, pc);
 
     }
     catch (cv_bridge::Exception &e) {
