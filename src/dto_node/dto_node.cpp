@@ -175,7 +175,7 @@ private:
     /**
      * Detects people and their x, y and z coordinates.
      * @param pointCloud2Ptr = PointCloud2 from callback.
-     * @param imgPtr = Image from callback
+     * @param imgPtr = Image from callback 
      */
     void detectPeople(const PointCloud2ConstPtr &pointCloud2Ptr, const ImageConstPtr &imgPtr) {
         const CvImagePtr cvPtr = rosImgToCVImg(imgPtr);
