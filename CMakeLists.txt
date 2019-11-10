@@ -23,7 +23,6 @@ catkin_package(CATKIN_DEPENDS sensor_msgs std_msgs message_runtime)
 
 
 #Exectable aanmaken
-add_executable(img_conv_node img_conv_node/ ${CONV_NODE_SRC})
 add_executable(dto_node dto_node/ ${DTO_NODE_SRC})
 
 
@@ -31,7 +30,6 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
 
 #dit moet ook..
-target_link_libraries(img_conv_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(dto_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
 
 
