@@ -41,8 +41,10 @@ public:
     };
 
     ObjectDetector(const NodeHandle &n, Detectable dtc) : pclSub(nh, "/camera/depth_registered/points", MAX_QUEUE_SIZE),
-                                                          rgbImageSub(nh, "/camera/rgb/image_rect_color",MAX_QUEUE_SIZE),
-                                                          synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub,rgbImageSub) {
+                                                          rgbImageSub(nh, "/camera/rgb/image_rect_color",
+                                                                      MAX_QUEUE_SIZE),
+                                                          synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub,
+                                                                       rgbImageSub) {
         detectable = dtc;
     }
 
@@ -65,11 +67,13 @@ public:
 private:
     const Scalar DETECTION_SCALAR = Scalar(255, 0, 255);
     const Size DEFAULT_ASTRA_IMAGE_SIZE = Size(640, 480);
-     typedef sync_policies::ApproximateTime<PointCloud2, Image> syncPolicy;
+    const int DETECTION_THICKNESS = 3;
+    typedef sync_policies::ApproximateTime<PointCloud2, Image> syncPolicy;
     NodeHandle nh;
     message_filters::Subscriber<PointCloud2> pclSub;
     message_filters::Subscriber<Image> rgbImageSub;
     Synchronizer<syncPolicy> synchronizer;
+    Publisher publisher;
     Detectable detectable;
 
     /**
@@ -113,6 +117,25 @@ private:
     static void showDetection(const Mat &im) {
         imshow("Detections", im);
         waitKey(1);
+    }
+
+    /**
+     * Marks a found point with a circle.
+     * @param im  = image.
+     * @param center = center point.
+     * @param radius  = radius of circle.
+     */
+    void markDetectionAsCircle(const Mat &im, const Point &center, int radius) {
+        circle(im, center, radius, DETECTION_SCALAR, DETECTION_THICKNESS, 8, 0);
+    }
+
+    /**
+     * Marks a found point with a rectangle.
+     * @param im = image.
+     * @param r = given rectangle to mark with.
+     */
+    void markDetectionAsRectangle(Mat &im, const Rect &r) {
+        rectangle(im, r, DETECTION_SCALAR, DETECTION_THICKNESS);
     }
 
     /**
@@ -160,10 +183,12 @@ private:
                 if (!pointIsNan(pxyz)) {
                     // circle outline
                     int radius = vec[2];
-                    circle(im, center, radius, DETECTION_SCALAR, 3, 8, 0);
 
+                    markDetectionAsCircle(im, center, radius);
                     stringstream msg;
-                    ROS_INFO_STREAM("Rode bal " << i + 1 << ": X = " << pxyz.x << ", Y = " << pxyz.y << ", Z = " << pxyz.z << endl);
+                    ROS_INFO_STREAM(
+                            "Rode bal " << i + 1 << ": X = " << pxyz.x << ", Y = " << pxyz.y << ", Z = " << pxyz.z
+                                        << endl);
                 }
             }
         } else {
@@ -196,8 +221,8 @@ private:
 
                 PointXYZ p = pointCloud.at(center.x, center.y);
                 if (!pointIsNan(p)) {
+                    markDetectionAsRectangle(cvPtr->image, peopleRectangles[i]);
                     ROS_INFO_STREAM("Persoon " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl);
-                    rectangle(cvPtr->image, peopleRectangles[i], DETECTION_SCALAR, 3);
                 }
             }
         } else {
