@@ -37,15 +37,16 @@ class ObjectDetector {
 
 public:
     enum Detectable {
-        RED_BALL, PEOPLE
+        RED_BALL, PEOPLE, YOLO_V3
     };
 
-    ObjectDetector(const NodeHandle &n, Detectable dtc) : pclSub(nh, "/camera/depth_registered/points", MAX_QUEUE_SIZE),
-                                                          rgbImageSub(nh, "/camera/rgb/image_rect_color",
-                                                                      MAX_QUEUE_SIZE),
-                                                          synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub,
-                                                                       rgbImageSub) {
+    ObjectDetector(NodeHandle &n, Detectable dtc) : pclSub(nh, "/camera/depth_registered/points", MAX_QUEUE_SIZE),
+                                                    rgbImageSub(nh, "/camera/rgb/image_rect_color",
+                                                                MAX_QUEUE_SIZE),
+                                                    synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub,
+                                                                 rgbImageSub) {
         detectable = dtc;
+        publisher = n.advertise<Image>("/camera_reading", MAX_QUEUE_SIZE);
     }
 
     /**
@@ -169,8 +170,9 @@ private:
 
         //detect circles within the combined hue
         vector<Vec3f> circles;
-        HoughCircles(combinedHue, circles, HOUGH_GRADIENT, 1.0, (double) combinedHue.rows / 8, 150.0, 25.0, 10, 100);
+        HoughCircles(combinedHue, circles, HOUGH_GRADIENT, 1.0, (double) combinedHue.rows, 150.0, 25.0, 10, 100);
 
+        showDetection(combinedHue);
         //convert image back to bgr (in case we'd like to see it)
         cvtColor(im, im, COLOR_HSV2BGR);
 
@@ -194,7 +196,7 @@ private:
         } else {
             ROS_INFO("Geen rode bal gevonden...");
         }
-        showDetection(im);
+//        showDetection(im);
     }
 
     /**
@@ -231,6 +233,11 @@ private:
         showDetection(cvPtr->image);
     }
 
+    void yolov3(const PointCloud2ConstPtr &pointCloud2Ptr, const ImageConstPtr &imgPtr) {
+        ROS_INFO("HIER");
+        publisher.publish(imgPtr);
+    }
+
     /**
      * Callback for the PointCloud and RGB image.
      * @param pointCloud = pointCloud from ros.
@@ -247,25 +254,58 @@ private:
                 detectPeople(pointCloud, im);
                 break;
             }
+            case YOLO_V3: {
+                yolov3(pointCloud, im);
+                break;
+            }
         }
     }
 
 };
 
-int main(int argc, char **argv) {
-    init(argc, argv, "dto_node");
-    NodeHandle n;
-    Rate loopRate(ASTRA_FPS);
-
-    //todo 09/11/2019, the detectable becomes dynamic in the future and will be set by the 'speech' team
-    ObjectDetector objectDetector(n, ObjectDetector::Detectable::RED_BALL);
-    objectDetector.startDetecting();
-
-    while (ok()) {
-        spinOnce();
-        loopRate.sleep();
+/**
+ * Converts a ros image to a cv image.
+ * @param im = ros image ptr.
+ * @return = cv image.
+ */
+static CvImagePtr rosImgToCVImg(const ImageConstPtr &im) {
+    CvImagePtr cv_ptr;
+    try {
+        return toCvCopy(*im, image_encodings::BGR8);
+    } catch (cv_bridge::Exception &e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
     }
-
-    return 0;
 }
+
+/**
+ * Shows the given image in a window.
+ * @param im = (cv) image.
+ */
+static void showDetection(const Mat &im) {
+    imshow("Detections", im);
+    waitKey(1);
+}
+
+void callback(const ImageConstPtr &im) {
+    showDetection(rosImgToCVImg(im)->image);
+}
+
+//int main(int argc, char **argv) {
+//    init(argc, argv, "dto_node");
+//    NodeHandle n;
+//    Rate loopRate(ASTRA_FPS);
+//
+//    //todo 09/11/2019, the detectable becomes dynamic in the future and will be set by the 'speech' team
+//    ObjectDetector objectDetector(n, ObjectDetector::Detectable::YOLO_V3);
+//    objectDetector.startDetecting();
+//
+//    ros::Subscriber sub =  n.subscribe("/detection_image", MAX_QUEUE_SIZE, &callback);
+//
+//    while (ok()) {
+//        spinOnce();
+//        loopRate.sleep();
+//    }
+//
+//    return 0;
+//}
 
