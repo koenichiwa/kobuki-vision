@@ -13,6 +13,8 @@ find_package(darknet_ros REQUIRED COMPONENTS)
 
 set(DTO_NODE_SRC src/dto_node/dto_node.cpp)
 set(YOLO_NODE_SRC src/yolo_node/yolo.cpp)
+set(PCL_CONV_NODE_SRC src/pcl_conv_node/pcl_conv_node.cpp)
+
 
 add_message_files(FILES ObjectPosition.msg)
 generate_messages(
@@ -22,10 +24,11 @@ generate_messages(
 catkin_package(CATKIN_DEPENDS sensor_msgs std_msgs message_runtime)
 
 
-
 #Exectable aanmaken
 add_executable(dto_node dto_node/ ${DTO_NODE_SRC})
 add_executable(yolo_node yolo_node/ ${YOLO_NODE_SRC})
+add_executable(pcl_conv_node pcl_conv_node/ ${PCL_CONV_NODE_SRC})
+
 
 
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${darknet_ros_INCLUDE_DIRS})
@@ -34,5 +37,8 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${darknet_ros_INC
 #dit moet ook..
 target_link_libraries(dto_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(yolo_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(pcl_conv_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${PCL_LIBRARIES})
+
+
 
 
