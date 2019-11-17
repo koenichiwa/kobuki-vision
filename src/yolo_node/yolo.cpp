@@ -7,6 +7,7 @@
 #include "message_filters/subscriber.h"
 #include "cv_bridge/cv_bridge.h"
 #include <message_filters/sync_policies/approximate_time.h>
+#include <opencv-3.3.1-dev/opencv/cv.hpp>
 #include "darknet_ros_msgs/BoundingBoxes.h"
 
 #define ASTRA_FPS 30
@@ -37,7 +38,7 @@ private:
         vector<BoundingBox> boxes = bb->bounding_boxes;
         for (unsigned long i = 0; i < boxes.size(); i++) {
             BoundingBox box = boxes[i];
-            ROS_INFO_STREAM("Object " << i+1 << ": " << box.Class << ", %" << (box.probability*100));
+            ROS_INFO_STREAM("Object " << i+1 << ": " << box.Class << ", " << (box.probability*100) << "%");
         }
     }
 
@@ -55,10 +56,12 @@ public:
 };
 
 int main(int argc, char **argv) {
-    init(argc, argv, "dto_node");
+    init(argc, argv, "yolo_node");
     NodeHandle n;
     Rate loopRate(ASTRA_FPS);
     YoloDetector yoloDetector(n);
+
+    ROS_INFO("Yolo node started");
 
     while (ok()) {
         spinOnce();
