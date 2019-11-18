@@ -37,13 +37,16 @@ class ObjectDetector {
 
 public:
     enum Detectable {
-        RED_BALL, PEOPLE
+        RED_BALL, PEOPLE, YOLO_V3
     };
 
-    ObjectDetector(const NodeHandle &n, Detectable dtc) : pclSub(nh, "/camera/depth_registered/points", MAX_QUEUE_SIZE),
-                                                          rgbImageSub(nh, "/camera/rgb/image_rect_color",MAX_QUEUE_SIZE),
-                                                          synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub,rgbImageSub) {
+    ObjectDetector(NodeHandle &n, Detectable dtc) : pclSub(nh, "/camera/depth_registered/points", MAX_QUEUE_SIZE),
+                                                    rgbImageSub(nh, "/camera/rgb/image_rect_color",
+                                                                MAX_QUEUE_SIZE),
+                                                    synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub,
+                                                                 rgbImageSub) {
         detectable = dtc;
+        publisher = n.advertise<Image>("/camera_reading", MAX_QUEUE_SIZE);
     }
 
     /**
@@ -65,11 +68,13 @@ public:
 private:
     const Scalar DETECTION_SCALAR = Scalar(255, 0, 255);
     const Size DEFAULT_ASTRA_IMAGE_SIZE = Size(640, 480);
-     typedef sync_policies::ApproximateTime<PointCloud2, Image> syncPolicy;
+    const int DETECTION_THICKNESS = 3;
+    typedef sync_policies::ApproximateTime<PointCloud2, Image> syncPolicy;
     NodeHandle nh;
     message_filters::Subscriber<PointCloud2> pclSub;
     message_filters::Subscriber<Image> rgbImageSub;
     Synchronizer<syncPolicy> synchronizer;
+    Publisher publisher;
     Detectable detectable;
 
     /**
@@ -116,6 +121,25 @@ private:
     }
 
     /**
+     * Marks a found point with a circle.
+     * @param im  = image.
+     * @param center = center point.
+     * @param radius  = radius of circle.
+     */
+    void markDetectionAsCircle(const Mat &im, const Point &center, int radius) {
+        circle(im, center, radius, DETECTION_SCALAR, DETECTION_THICKNESS, 8, 0);
+    }
+
+    /**
+     * Marks a found point with a rectangle.
+     * @param im = image.
+     * @param r = given rectangle to mark with.
+     */
+    void markDetectionAsRectangle(Mat &im, const Rect &r) {
+        rectangle(im, r, DETECTION_SCALAR, DETECTION_THICKNESS);
+    }
+
+    /**
      * Detects a red ball.
      * @param pointCloud2Ptr = PointCloud2 from callback.
      * @param imgPtr = Image from callback
@@ -146,8 +170,9 @@ private:
 
         //detect circles within the combined hue
         vector<Vec3f> circles;
-        HoughCircles(combinedHue, circles, HOUGH_GRADIENT, 1.0, (double) combinedHue.rows / 8, 150.0, 25.0, 10, 100);
+        HoughCircles(combinedHue, circles, HOUGH_GRADIENT, 1.0, (double) combinedHue.rows, 150.0, 25.0, 10, 100);
 
+        showDetection(combinedHue);
         //convert image back to bgr (in case we'd like to see it)
         cvtColor(im, im, COLOR_HSV2BGR);
 
@@ -160,16 +185,18 @@ private:
                 if (!pointIsNan(pxyz)) {
                     // circle outline
                     int radius = vec[2];
-                    circle(im, center, radius, DETECTION_SCALAR, 3, 8, 0);
 
+                    markDetectionAsCircle(im, center, radius);
                     stringstream msg;
-                    ROS_INFO_STREAM("Rode bal " << i + 1 << ": X = " << pxyz.x << ", Y = " << pxyz.y << ", Z = " << pxyz.z << endl);
+                    ROS_INFO_STREAM(
+                            "Rode bal " << i + 1 << ": X = " << pxyz.x << ", Y = " << pxyz.y << ", Z = " << pxyz.z
+                                        << endl);
                 }
             }
         } else {
             ROS_INFO("Geen rode bal gevonden...");
         }
-        showDetection(im);
+//        showDetection(im);
     }
 
     /**
@@ -196,14 +223,19 @@ private:
 
                 PointXYZ p = pointCloud.at(center.x, center.y);
                 if (!pointIsNan(p)) {
+                    markDetectionAsRectangle(cvPtr->image, peopleRectangles[i]);
                     ROS_INFO_STREAM("Persoon " << i + 1 << "; X: " << p.x << ", Y: " << p.y << ", Z: " << p.z << endl);
-                    rectangle(cvPtr->image, peopleRectangles[i], DETECTION_SCALAR, 3);
                 }
             }
         } else {
             ROS_INFO("Er zijn geen personen gevonden...");
         }
         showDetection(cvPtr->image);
+    }
+
+    void yolov3(const PointCloud2ConstPtr &pointCloud2Ptr, const ImageConstPtr &imgPtr) {
+        ROS_INFO("HIER");
+        publisher.publish(imgPtr);
     }
 
     /**
@@ -222,25 +254,58 @@ private:
                 detectPeople(pointCloud, im);
                 break;
             }
+            case YOLO_V3: {
+                yolov3(pointCloud, im);
+                break;
+            }
         }
     }
 
 };
 
-int main(int argc, char **argv) {
-    init(argc, argv, "dto_node");
-    NodeHandle n;
-    Rate loopRate(ASTRA_FPS);
-
-    //todo 09/11/2019, the detectable becomes dynamic in the future and will be set by the 'speech' team
-    ObjectDetector objectDetector(n, ObjectDetector::Detectable::RED_BALL);
-    objectDetector.startDetecting();
-
-    while (ok()) {
-        spinOnce();
-        loopRate.sleep();
+/**
+ * Converts a ros image to a cv image.
+ * @param im = ros image ptr.
+ * @return = cv image.
+ */
+static CvImagePtr rosImgToCVImg(const ImageConstPtr &im) {
+    CvImagePtr cv_ptr;
+    try {
+        return toCvCopy(*im, image_encodings::BGR8);
+    } catch (cv_bridge::Exception &e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
     }
-
-    return 0;
 }
+
+/**
+ * Shows the given image in a window.
+ * @param im = (cv) image.
+ */
+static void showDetection(const Mat &im) {
+    imshow("Detections", im);
+    waitKey(1);
+}
+
+void callback(const ImageConstPtr &im) {
+    showDetection(rosImgToCVImg(im)->image);
+}
+
+//int main(int argc, char **argv) {
+//    init(argc, argv, "dto_node");
+//    NodeHandle n;
+//    Rate loopRate(ASTRA_FPS);
+//
+//    //todo 09/11/2019, the detectable becomes dynamic in the future and will be set by the 'speech' team
+//    ObjectDetector objectDetector(n, ObjectDetector::Detectable::YOLO_V3);
+//    objectDetector.startDetecting();
+//
+//    ros::Subscriber sub =  n.subscribe("/detection_image", MAX_QUEUE_SIZE, &callback);
+//
+//    while (ok()) {
+//        spinOnce();
+//        loopRate.sleep();
+//    }
+//
+//    return 0;
+//}
 

@@ -7,6 +7,8 @@ Kobuki-vision
 
 Vision for kobuki project
 
+All thresholds, within the darknet_ros/darknet_ros/config/ folder should be changed to 0.8, for higher probabilities.
+
 
 Features
 --------
