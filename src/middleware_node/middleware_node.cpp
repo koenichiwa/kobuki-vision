@@ -3,6 +3,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <std_msgs/String.h>
+#include <vision/ObjectPosition.h>
 
 #define ASTRA_FPS 30
 #define MAX_QUEUE_SIZE 1
@@ -16,6 +17,7 @@ using namespace std;
 using namespace ros;
 using namespace pcl;
 using namespace std_msgs;
+using namespace vision;
 
 /**
  * Class which acts as a middleware of this project. It takes objects used for detections, and publishes detections
@@ -62,12 +64,13 @@ private:
                 if (!pointIsNan(pxyz)) {
                     stringstream ss;
 
-                    //todo 20/11/2019, this should become a ros msg with given properties.
-                    ss << "type: " << foundName << ", distance: 0, x: " << pxyz.x << ", y: " << pxyz.y << ", z: "
-                       << pxyz.z;
-                    String s;
-                    s.data = ss.str();
-                    detectionPub.publish(s);
+                    ObjectPosition pos;
+                    pos.x = pxyz.x;
+                    pos.y = pxyz.y;
+                    pos.z = pxyz.z;
+                    pos.type = foundName;
+                    pos.distance = 0;//todo 20/11/2019, implementation by Heralt
+                    detectionPub.publish(pos);
                 }
             }
         }
@@ -91,9 +94,7 @@ public:
                                                synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
         synchronizer.registerCallback(boost::bind(&VisionMiddleware::recognitionCallback, this, _1, _2));
         detectionObjectSub.registerCallback(&VisionMiddleware::detectionObjectCallback, this);
-
-        //todo 18/11/2019, this should become a publisher with a custom position message
-        detectionPub = n.advertise<String>("/vision/object_position", MAX_QUEUE_SIZE);
+        detectionPub = n.advertise<ObjectPosition>("/vision/object_position", MAX_QUEUE_SIZE);
     }
 
 };
