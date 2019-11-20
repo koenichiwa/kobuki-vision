@@ -6,6 +6,7 @@
 
 #define ASTRA_FPS 30
 #define MAX_QUEUE_SIZE 1
+#define MIN_DETECTION_THRESHOLD 0.8
 
 using namespace ros;
 using namespace message_filters;
@@ -51,8 +52,8 @@ private:
         for (const auto &box : boxes) {
             string foundName = box.Class;
 
-            //check if what we found is what we need to detect
-            if (foundName == detectedName) {
+            //check if what we found is what we need to detect and the probability is high enough
+            if (foundName == detectedName && box.probability >= MIN_DETECTION_THRESHOLD) {
                 long middleX = (box.xmax + box.xmin) / 2;
                 long middleY = (box.ymax + box.ymin) / 2;
                 PointXYZ pxyz = pcl->at((int) middleX, (int) middleY);
