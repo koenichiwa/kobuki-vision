@@ -16,52 +16,83 @@ using namespace ros;
 using namespace pcl;
 using namespace std_msgs;
 
+/**
+ * Class which acts as a middleware of this project. It takes objects used for detections, and publishes detections
+ * when anything is found.
+ */
 class VisionMiddleware {
 private:
-    string detectable = "";
+    string detectedName = "";
     typedef sync_policies::ApproximateTime<PointCloud<PointXYZ>, BoundingBoxes> syncPolicy;
     message_filters::Subscriber<PointCloud<PointXYZ>> pclSub;
-    message_filters::Subscriber<String> speechSub;
+    message_filters::Subscriber<String> detectionObjectSub;
     message_filters::Subscriber<BoundingBoxes> yoloSub;
     Synchronizer<syncPolicy> synchronizer;
-    Publisher armPub;
+    Publisher detectionPub;
 
+    /**
+     * Checks if a given point is NaN.
+     * @param p = PointXYZ from the PointCloud.
+     * @return = boolean if any axis is NaN.
+     */
+    static bool pointIsNan(const PointXYZ p) {
+        return isnan(p.x) || isnan(p.y) || isnan(p.z);
+    }
+
+    /**
+     * Function which gets a PointCloud<PointXYZ> and a BoundingBoxes (Yolo detection) object, when there is a detection
+     * and a PointCloud available. The synchronizer will manage synchronization, so the PointCloud matches the detection frame.
+     *
+     * @param pcl = the PointCloud<PointXYZ> from our own conversion.
+     * @param bb = the BoundingBoxes object.
+     */
     void recognitionCallback(const PointCloud<PointXYZ>::ConstPtr &pcl, const BoundingBoxesConstPtr &bb) {
         vector<BoundingBox> boxes = bb->bounding_boxes;
-        for (auto box : boxes) {
-            string found = box.Class;
-            if (found == detectable) {
+        for (const auto &box : boxes) {
+            string foundName = box.Class;
+
+            //check if what we found is what we need to detect
+            if (foundName == detectedName) {
                 long middleX = (box.xmax + box.xmin) / 2;
                 long middleY = (box.ymax + box.ymin) / 2;
-                PointXYZ pxyz = pcl->at(middleX, middleY);
+                PointXYZ pxyz = pcl->at((int) middleX, (int) middleY);
 
-                stringstream ss;
-                ss << "type: " << found << ", distance: 0, x: " << pxyz.x << ", y: " << pxyz.y << ", z: "
-                   << pxyz.z;
-                String s;
-                s.data = ss.str();
-                armPub.publish(s);
+                //A detection with no valid PointXYZ is useless..
+                if (!pointIsNan(pxyz)) {
+                    stringstream ss;
+
+                    //todo 20/11/2019, this should become a ros msg with given properties.
+                    ss << "type: " << foundName << ", distance: 0, x: " << pxyz.x << ", y: " << pxyz.y << ", z: "
+                       << pxyz.z;
+                    String s;
+                    s.data = ss.str();
+                    detectionPub.publish(s);
+                }
             }
         }
     }
 
-    void speechCallback(const StringConstPtr &toDetect) {
+    /**
+     * Listen to the topic which makes it able to detect a specific object.
+     * @param toDetect = String representation of detection object.
+     */
+    void detectionObjectCallback(const StringConstPtr &toDetect) {
         string d = toDetect.get()->data;
-        ROS_INFO_STREAM("Speech team requested to detect " << d);
-        this->detectable = d;
+        ROS_INFO_STREAM("Speech team requested to detect a(n) " << d);
+        this->detectedName = d;
     }
 
 
 public:
     explicit VisionMiddleware(NodeHandle &n) : pclSub(n, "/vision/point_cloud", MAX_QUEUE_SIZE),
                                                yoloSub(n, "/darknet_ros/bounding_boxes", MAX_QUEUE_SIZE),
-                                               speechSub(n, "/speech/detect", MAX_QUEUE_SIZE),
+                                               detectionObjectSub(n, "/speech/detect", MAX_QUEUE_SIZE),
                                                synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
         synchronizer.registerCallback(boost::bind(&VisionMiddleware::recognitionCallback, this, _1, _2));
-        speechSub.registerCallback(&VisionMiddleware::speechCallback, this);
+        detectionObjectSub.registerCallback(&VisionMiddleware::detectionObjectCallback, this);
 
         //todo 18/11/2019, this should become a publisher with a custom position message
-        armPub = n.advertise<String>("/vision/object_position", MAX_QUEUE_SIZE);
+        detectionPub = n.advertise<String>("/vision/object_position", MAX_QUEUE_SIZE);
     }
 
 };
