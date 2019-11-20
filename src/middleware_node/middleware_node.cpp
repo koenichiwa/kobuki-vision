@@ -6,7 +6,6 @@
 
 #define ASTRA_FPS 30
 #define MAX_QUEUE_SIZE 1
-#define DEBUG true
 
 using namespace ros;
 using namespace message_filters;
@@ -29,23 +28,15 @@ private:
 
     void recognitionCallback(const PointCloud<PointXYZ>::ConstPtr &pcl, const BoundingBoxesConstPtr &bb) {
         vector<BoundingBox> boxes = bb->bounding_boxes;
-        for (unsigned long i = 0; i < boxes.size(); i++) {
-            BoundingBox box = boxes[i];
+        for (auto box : boxes) {
             string found = box.Class;
-            if (DEBUG) {
-                long middleX = (box.xmax + box.xmin) / 2;
-                long middleY = (box.ymax + box.ymin) / 2;
-                ROS_INFO_STREAM("Object #" << i + 1 << ": " << box.Class << ", " << (box.probability * 100) << "%");
-                PointXYZ pxyz = pcl->at(middleX, middleY);
-                ROS_INFO_STREAM("Object #" << i + 1 << " PCL: X: " << pxyz.x << ", Y: " << pxyz.y << ", Z: " << pxyz.z);
-            }
             if (found == detectable) {
                 long middleX = (box.xmax + box.xmin) / 2;
                 long middleY = (box.ymax + box.ymin) / 2;
                 PointXYZ pxyz = pcl->at(middleX, middleY);
 
                 stringstream ss;
-                ss << "type: " << found << ", distance: not impl yet, x: " << pxyz.x << ", y: " << pxyz.y << ", z: "
+                ss << "type: " << found << ", distance: 0, x: " << pxyz.x << ", y: " << pxyz.y << ", z: "
                    << pxyz.z;
                 String s;
                 s.data = ss.str();
