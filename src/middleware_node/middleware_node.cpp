@@ -7,7 +7,7 @@
 
 #define ASTRA_FPS 30
 #define MAX_QUEUE_SIZE 1
-#define MIN_DETECTION_THRESHOLD 0.8
+#define MIN_DETECTION_THRESHOLD 0.7
 
 using namespace ros;
 using namespace message_filters;
