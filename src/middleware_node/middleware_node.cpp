@@ -76,6 +76,11 @@ private:
         }
     }
 
+    float distanceCallback(float x, float z){
+        float distance = sqrt((x*x)+(z*z));
+        return distance;
+    }
+
     /**
      * Listen to the topic which makes it able to detect a specific object.
      * @param toDetect = String representation of detection object.
