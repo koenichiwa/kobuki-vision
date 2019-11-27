@@ -84,7 +84,7 @@ private:
      * @return = float value of distance (in centimeters).
      */
     static float calculateDistance(float x, float z) {
-        float distance = sqrt((x * x) + (z * z)) * 100;
+        return sqrt((x * x) + (z * z)) * 100;
     }
 
     /**
