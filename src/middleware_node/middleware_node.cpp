@@ -69,7 +69,7 @@ private:
                     pos.y = pxyz.y;
                     pos.z = pxyz.z;
                     pos.type = foundName;
-                    pos.distance = calculateDistance(pxyz.x, pxyz.z);//todo 20/11/2019, implementation by Heralt
+                    pos.distance = calculateDistance (pxyz.x, pxyz.z);//todo 20/11/2019, implementation by Heralt
                     detectionPub.publish(pos);
                 }
             }
@@ -77,7 +77,7 @@ private:
     }
 
     static float calculateDistance(float x, float z){
-        float distance = sqrt((x*x)+(z*z));
+        float distance = sqrt((x*x)+(z*z)) * 100;
         return distance;
     }
 
