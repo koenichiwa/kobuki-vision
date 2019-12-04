@@ -1,3 +1,9 @@
 [submodule "ros_astra_camera"]
 	path = ros_astra_camera
 	url = submodules/https://github.com/orbbec/ros_astra_camera
+[submodule "submodules/ros_astra_camera"]
+	path = submodules/ros_astra_camera
+	url = https://github.com/orbbec/ros_astra_camera
+[submodule "submodules/darknet_ros"]
+	path = submodules/darknet_ros
+	url = https://github.com/mbakker96/darknet_ros.git
