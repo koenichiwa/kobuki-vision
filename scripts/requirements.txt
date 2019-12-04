@@ -6,13 +6,17 @@ camera-calibration-parsers==1.11.13
 catkin==0.7.18
 catkin-pkg==0.4.14
 Click==7.0
+controller-manager==0.13.3
+controller-manager-msgs==0.13.3
 cv-bridge==1.12.8
 diagnostic-analysis==1.9.3
 diagnostic-common-diagnostics==1.9.3
 diagnostic-updater==1.9.3
 docutils==0.15.2
 dynamic-reconfigure==1.5.50
+fingertip-pressure==1.8.18
 Flask==1.1.1
+Flask-Cors==3.0.8
 gazebo-plugins==2.5.19
 gazebo-ros==2.5.19
 gencpp==0.6.0
@@ -29,6 +33,7 @@ laser-geometry==1.6.4
 MarkupSafe==1.1.1
 message-filters==1.12.14
 pluginlib==1.11.3
+pr2-controller-manager==1.8.17
 pyparsing==2.4.5
 python-dateutil==2.8.1
 python-qt-binding==0.3.4
@@ -64,6 +69,7 @@ rqt-bag==0.4.12
 rqt-bag-plugins==0.4.12
 rqt-console==0.4.8
 rqt-dep==0.4.9
+rqt-ez-publisher==0.5.0
 rqt-graph==0.4.9
 rqt-gui==0.5.0
 rqt-gui-py==0.5.0
