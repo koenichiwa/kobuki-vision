@@ -68,11 +68,22 @@ private:
                     pos.y = pxyz.y;
                     pos.z = pxyz.z;
                     pos.type = foundName;
-                    pos.distance = 0;//todo 20/11/2019, implementation by Heralt
+                    pos.distance = calculateDistance (pxyz.x, pxyz.z);
                     detectionPub.publish(pos);
                 }
             }
         }
+    }
+
+
+    /**
+     * Calculates the distance out of x and z PointCloud point values.
+     * @param x = x value.
+     * @param z = z value.
+     * @return = float value of distance (in centimeters).
+     */
+    static float calculateDistance(float x, float z) {
+        return sqrt((x * x) + (z * z)) * 100;
     }
 
     /**
