@@ -4,7 +4,7 @@
     <param name="/darknet_ros/yolo_model/threshold/value" value="0.7" />
     <param name="/darknet_ros/image_view/enable_opencv" value="true" />
     <!-- Darknet_ROS has his config file location hardcoded. We must go back some folders to get to our config file-->
-    <param name="/darknet_ros/yolo_model/config_file/name" value="../../../../kobuki-vision/config/yolov2-tiny.cfg" />
+    <param name="/darknet_ros/yolo_model/config_file/name" value="../../../../vision-project/config/yolov2-tiny.cfg" />
     <node pkg="vision" type="pcl_conv_node" name="pcl_conv_node" output="screen"/>
     <node pkg="vision" type="middleware_node" name="middleware_node" output="screen"/>
 </launch>
