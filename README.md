@@ -1,7 +1,9 @@
 # Kobuki Vision
 
 ## Description
-Kobuki Vision is a bla bla bla...
+Kobuki Vision is a submodule of the [Kobuki Project](https://github.com/HvA-Robotics/kobuki-central),
+made by 4th year Techinal Computing students at the [AUAS](https://www.amsterdamuas.com/). The project is 
+focused on object detection using a [stereo vision camera](https://orbbec3d.com/product-astra-pro/). 
 
 ## Getting it running
 Before you can run this project, there are a few steps to be taken. 
