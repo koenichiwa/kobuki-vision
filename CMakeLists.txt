@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(vision)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(OpenCV_INCLUDE_DIRS $ENV{HOME}/installation/OpenCV-4.1.1/lib/cmake/opencv4)
-find_package(catkin REQUIRED COMPONENTS darknet_ros roslaunch roscpp std_msgs cv_bridge image_transport pcl_msgs message_generation genmsg)
+find_package(catkin REQUIRED COMPONENTS darknet_ros roslaunch roscpp rospy std_msgs cv_bridge image_transport pcl_msgs message_generation genmsg)
 
 
 #Dit moet in aparte calls for some reason
