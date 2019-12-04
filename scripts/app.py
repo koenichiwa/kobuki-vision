@@ -6,7 +6,8 @@ import json
 
 detected_objects = []
 
-class detectedobject:
+
+class DetectedObject:
 
     def __init__(self, name, x, y, z, distance):
         self.name = name
@@ -23,7 +24,7 @@ class detectedobject:
         }
 
 def callback(data):
-    obj = detectedobject(data.type, data.x, data.y, data.z, data.distance)
+    obj = DetectedObject(data.type, data.x, data.y, data.z, data.distance)
 
     if len(detected_objects) < 10:
         detected_objects.append(obj)
