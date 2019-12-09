@@ -9,7 +9,8 @@ pip install -r requirements.txt
 
 Due to ros being slow as fuck in updating Python you will need to use Python 2.7
 
-Once all requirements are met the script can be run using python app.py
+Once all requirements are met the script can be run using python demo.py, 
+or by using the launch file for the vision package
 
 This will start the web server and the page will be available at 
 
