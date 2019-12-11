@@ -5,6 +5,6 @@
     </include>
     <node pkg="vision" type="pcl_conv_node" name="pcl_conv_node" output="screen"/>
     <node pkg="vision" type="middleware_node" name="middleware_node" output="screen"/>
-    <node pkg='vision" type="demo.py" name="demo.py" output="screen"/>
+    <node pkg="vision" type="demo.py" name="demo.py" output="screen"/>
     <node pkg="vision" type="pcl_util_service" name="pcl_util_service" output="screen"/>
 </launch>
