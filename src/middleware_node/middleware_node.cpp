@@ -45,6 +45,7 @@ private:
      * @param bb = the BoundingBoxes object.
      */
     void recognitionCallback(const PointCloud<PointXYZ>::ConstPtr &pcl, const BoundingBoxesConstPtr &bb) {
+        Time now = Time::now();
         vector<BoundingBox> boxes = bb->bounding_boxes;
         for (const auto &box : boxes) {
             string foundName = box.Class;
@@ -68,6 +69,7 @@ private:
                         pos.x = pxyz.x;
                         pos.y = pxyz.y;
                         pos.z = pxyz.z;
+                        pos.time = now;
                         pos.type = foundName;
 
                         PclDistance pclDistance;
