@@ -7,35 +7,11 @@ focused on object detection using a [stereo vision camera](https://orbbec3d.com/
 
 ## Getting it running
 
-Install the astra camera
-```bash 
-sudo apt install ros-*-rgbd-launch ros-*-libuvc ros-*-libuvc-camera ros-*-libuvc-ros
-roscd astra_camera
-./scripts/create_udev_rules
-```
-
-For using the darknet plugin, it is required to install the dependencies OpenCv and boost on your machine. 
-
-The last step for the installation is to clone the submodules for darknet_ros. You can do this with the command:
-```bash 
-git submodule update --init --recursive
-```
- 
-## Testing it
-Starting Kobuki Vision is very easy. There is a launch file which automatically launches
-the required dependencies. Running the following single launch file is all it takes to run this project.
+Use the init script from the root directory!
 ```Bash
-roscore
+./init.sh
 ```
-```Bash
-roslaunch vision vision.launch
-```
-This will start Darknet ROS, Astra ROS and Kobuki Vision. 
-
-### Changing params
-
-In the launch file it is possible to adjust three darknet params. `threshold`, `opencv_view` and `config file` can be 
-adjusted in the `launch/vision.launch` file. 
+That should be it.
 
 ### Setting the object to detect
 To decide what Kobuki Vision needs to detect you can run the following command
