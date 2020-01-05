@@ -1,10 +1,9 @@
 <launch>
     <include file="$(find astra_camera)/launch/astra.launch"/>
-    <include file="$(find darknet_ros)/launch/darknet_ros.launch"/>
-    <param name="/darknet_ros/yolo_model/threshold/value" value="0.7" />
-    <param name="/darknet_ros/image_view/enable_opencv" value="true" />
-    <!-- Darknet_ROS has his config file location hardcoded. We must go back some folders to get to our config file-->
-    <param name="/darknet_ros/yolo_model/config_file/name" value="../../../../../vision-project/config/yolov2-tiny.cfg" />
+    <include file="$(find darknet_ros)/launch/darknet_ros.launch">
+        <param name="yolo_model/threshold/value" value="0.7"/>
+    </include>
     <node pkg="vision" type="pcl_conv_node" name="pcl_conv_node" output="screen"/>
     <node pkg="vision" type="middleware_node" name="middleware_node" output="screen"/>
+    <node pkg="vision" type="pcl_util_service" name="pcl_util_service" output="screen"/>
 </launch>

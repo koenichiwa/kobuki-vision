@@ -4,6 +4,8 @@
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <std_msgs/String.h>
 #include <vision/ObjectPosition.h>
+#include <vision/PclDistance.h>
+#include <vision/PclContainsNaN.h>
 
 #define ASTRA_FPS 30
 #define MAX_QUEUE_SIZE 1
@@ -31,15 +33,8 @@ private:
     message_filters::Subscriber<BoundingBoxes> yoloSub;
     Synchronizer<syncPolicy> synchronizer;
     Publisher detectionPub;
-
-    /**
-     * Checks if a given point is NaN.
-     * @param p = PointXYZ from the PointCloud.
-     * @return = boolean if any axis is NaN.
-     */
-    static bool pointIsNan(const PointXYZ p) {
-        return isnan(p.x) || isnan(p.y) || isnan(p.z);
-    }
+    ServiceClient pclDistClient;
+    ServiceClient pclNaNClient;
 
     /**
      * Function which gets a PointCloud<PointXYZ> and a BoundingBoxes (Yolo detection) object, when there is a detection
@@ -49,6 +44,7 @@ private:
      * @param bb = the BoundingBoxes object.
      */
     void recognitionCallback(const PointCloud<PointXYZ>::ConstPtr &pcl, const BoundingBoxesConstPtr &bb) {
+        Time now = Time::now();
         vector<BoundingBox> boxes = bb->bounding_boxes;
         for (const auto &box : boxes) {
             string foundName = box.Class;
@@ -60,30 +56,37 @@ private:
                 PointXYZ pxyz = pcl->at((int) middleX, (int) middleY);
 
                 //A detection with no valid PointXYZ is useless..
-                if (!pointIsNan(pxyz)) {
-                    stringstream ss;
+                PclContainsNaN pclContainsNaN;
+                pclContainsNaN.request.x = pxyz.x;
+                pclContainsNaN.request.y = pxyz.y;
+                pclContainsNaN.request.z = pxyz.z;
+                if (pclNaNClient.call(pclContainsNaN)) {
+                    if (!pclContainsNaN.response.isNaN) {
+                        stringstream ss;
 
-                    ObjectPosition pos;
-                    pos.x = pxyz.x;
-                    pos.y = pxyz.y;
-                    pos.z = pxyz.z;
-                    pos.type = foundName;
-                    pos.distance = calculateDistance (pxyz.x, pxyz.z);
-                    detectionPub.publish(pos);
+                        ObjectPosition pos;
+                        pos.x = pxyz.x;
+                        pos.y = pxyz.y;
+                        pos.z = pxyz.z;
+                        pos.time = now;
+                        pos.type = foundName;
+
+                        PclDistance pclDistance;
+                        pclDistance.request.x = pxyz.x;
+                        pclDistance.request.z = pxyz.z;
+
+                        if (pclDistClient.call(pclDistance)) {
+                            pos.distance = pclDistance.response.distance;
+                            detectionPub.publish(pos);
+                        } else {
+                            ROS_ERROR("Could not reach pclDistance service client.");
+                        }
+                    }
+                } else {
+                    ROS_ERROR("Could not reach pclNan service client.");
                 }
             }
         }
-    }
-
-
-    /**
-     * Calculates the distance out of x and z PointCloud point values.
-     * @param x = x value.
-     * @param z = z value.
-     * @return = float value of distance (in centimeters).
-     */
-    static float calculateDistance(float x, float z) {
-        return sqrt((x * x) + (z * z)) * 100;
     }
 
     /**
@@ -98,13 +101,18 @@ private:
 
 
 public:
-    explicit VisionMiddleware(NodeHandle &n) : pclSub(n, "/vision/point_cloud", MAX_QUEUE_SIZE),
-                                               yoloSub(n, "/darknet_ros/bounding_boxes", MAX_QUEUE_SIZE),
-                                               detectionObjectSub(n, "/speech/detect", MAX_QUEUE_SIZE),
-                                               synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
+    explicit VisionMiddleware(NodeHandle
+                              &n) : pclSub(n, "/vision/point_cloud", MAX_QUEUE_SIZE),
+                                    yoloSub(n, "/darknet_ros/bounding_boxes", MAX_QUEUE_SIZE),
+                                    detectionObjectSub(n, "/speech/detect", MAX_QUEUE_SIZE),
+                                    synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
         synchronizer.registerCallback(boost::bind(&VisionMiddleware::recognitionCallback, this, _1, _2));
         detectionObjectSub.registerCallback(&VisionMiddleware::detectionObjectCallback, this);
         detectionPub = n.advertise<ObjectPosition>("/vision/object_position", MAX_QUEUE_SIZE);
+        pclDistClient = n.serviceClient<PclDistance>("calculatePCLDistance");
+        pclNaNClient = n.serviceClient<PclContainsNaN>("checkIfPCLContainsNaN");
+        pclDistClient.waitForExistence();
+        pclNaNClient.waitForExistence();
     }
 
 };

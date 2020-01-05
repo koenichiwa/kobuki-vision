@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Demo Panel</title>
+</head>
+<script>
+    var int = self.setInterval(getData, 10000);
+
+    function getData() {
+
+        fetch("http://localhost:5000/detections")
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                CreateTable(data);
+            })
+            .catch(function (err) {
+                console.log('error: ' + err);
+            });
+    }
+
+    function appendData(data) {
+        var mainContainer = document.getElementById("detections");
+        for (var i = 0; i < data.length; i++) {
+            var div = document.createElement("div");
+            div.innerHTML = 'type: ' + data[i].name + ' ' +
+                ' x' + data[i].x + ' ' +
+                ' y' + data[i].y + ' ' +
+                ' z' + data[i].z + ' ' +
+                ' distance' + data[i].distance + ' ';
+            mainContainer.appendChild(div);
+        }
+    }
+    function CreateTable(data) {
+        var col = [];
+        var table = document.createElement("table");
+
+        for (var key in data[0]) {
+            col.push(key)
+        }
+        var tr = table.insertRow(-1);                   // TABLE ROW.
+
+        for (var i = 0; i < col.length; i++) {
+            var th = document.createElement("th");      // TABLE HEADER.
+            th.innerHTML = col[i];
+            tr.appendChild(th);
+        }
+
+
+        // ADD JSON DATA TO THE TABLE AS ROWS.
+        for (var i = 0; i < data.length; i++) {
+
+            tr = table.insertRow(-1);
+
+            for (var j = 0; j < col.length; j++) {
+                var tabCell = tr.insertCell(-1);
+                tabCell.innerHTML = data[i][col[j]];
+            }
+        }
+        var divContainer = document.getElementById("detections");
+        divContainer.innerHTML = "";
+        divContainer.appendChild(table);
+    }
+</script>
+
+<body>
+<div class="container">
+    <div class="row">
+        <!--First Video container-->
+        <div class="col s6 " id="left">
+            <div class="card-panel teal">
+                <img src="http://localhost:8080/stream?topic=/camera/rgb/image_raw" width="100%">
+            </div>
+        </div>
+        <!--Second Video container-->
+        <div class="col s6 ">
+            <div class="card-panel teal">
+                <img src="http://localhost:8080/stream?topic=/detection_image" width="100%">
+            </div>
+        </div>
+    </div>
+    <!--Container for detected objects-->
+    <div class="row">
+        <div class="col s12">
+            <div class="card-panel teal">
+                <div class="white-text" id="detections"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!--JavaScript at end of body for optimized loading-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>
