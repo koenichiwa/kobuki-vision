@@ -108,7 +108,7 @@ public:
                                     synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
         synchronizer.registerCallback(boost::bind(&VisionMiddleware::recognitionCallback, this, _1, _2));
         detectionObjectSub.registerCallback(&VisionMiddleware::detectionObjectCallback, this);
-        detectionPub = n.advertise<ObjectPosition>("/vision/object_position", MAX_QUEUE_SIZE);
+        detectionPub = n.advertise<ObjectPosition>("/vision/object_detection", MAX_QUEUE_SIZE);
         pclDistClient = n.serviceClient<PclDistance>("calculatePCLDistance");
         pclNaNClient = n.serviceClient<PclContainsNaN>("checkIfPCLContainsNaN");
         pclDistClient.waitForExistence();

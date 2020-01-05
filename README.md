@@ -11,10 +11,19 @@ Use the init script from the root directory!
 ```Bash
 ./init.sh
 ```
-That should be it.
-
+And after that, do a catkin_make
+```Bash
+cd ${HOME}/catkin_ws
+```
+```Bash
+catkin_make
+```
+Or when darknet_ros has a hard time, for whatever reason:
+```Bash
+catkin_make -DCATKIN_BLACKLIST_PACKAGES="darknet_ros"
+```
 ### Setting the object to detect
-To decide what Kobuki Vision needs to detect you can run the following command
+To decide what Kobuki Vision needs to deteou can run the following command
 ```Bash
 rostopic pub /speech/detect std_msgs/String "data: '${object}'" 
 ```
@@ -24,7 +33,7 @@ where **${object}** is the object you'd like to detect. See all available object
 When Kobuki Vision detects a given object to detect, it will publish it on a specific topic.
 To listen to this topic, run:
 ```Bash
-rostopic echo /vision/object_position
+rostopic echo /vision/object_detection
 ```
 Note: when you have **not** set any object to detect, Kobuki Vision won't publish anything. 
 

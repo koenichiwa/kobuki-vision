@@ -40,3 +40,4 @@ installAstraCamera
 echo "Going to adapt configurations"
 adaptConfiguration
 echo "Done!"
+echo "If catkin_make does not build due to darknet_ros, please use catkin_make -DCATKIN_BLACKLIST_PACKAGES='darknet_ros' instead."
