@@ -3,6 +3,10 @@ thresHold=0.7
 imSize=208
 yoloV2TinyYaml=submodules/darknet_ros/darknet_ros/config/yolov2-tiny.yaml
 yoloV2TinyCFG=submodules/darknet_ros/darknet_ros/yolo_network_config/cfg/yolov2-tiny.cfg
+sourceFiles() {
+  source /opt/ros/kinetic/setup.bash
+  source ~/catkin_ws/devel/setup.bash
+}
 
 installSubModules() {
   git submodule update --init --recursive
@@ -15,6 +19,8 @@ installAstraCamera() {
 }
 
 adaptConfiguration() {
+  roscd vision
+  cd ..
   if [[ -f ${yoloV2TinyYaml} ]]; then
     sed -i "s/value: 0.*/value:0.7/" ${yoloV2TinyYaml}
     echo "Yolo V2 tiny threshold altered to ${thresHold}!"
@@ -33,6 +39,7 @@ adaptConfiguration() {
 }
 
 echo "Welcome to Kobuki-vision!"
+sourceFiles
 echo "Going to install the submodules..."
 installSubModules
 echo "Going to install the astra_camera"
