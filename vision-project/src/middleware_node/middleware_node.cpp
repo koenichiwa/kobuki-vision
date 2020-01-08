@@ -6,6 +6,9 @@
 #include <vision/ObjectPosition.h>
 #include <vision/PclDistance.h>
 #include <vision/PclContainsNaN.h>
+#include "geometry_msgs/PoseStamped.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2_ros/transform_listener.h"
 
 #define ASTRA_FPS 30
 #define MAX_QUEUE_SIZE 1
@@ -13,6 +16,7 @@
 using namespace ros;
 using namespace message_filters;
 using namespace sensor_msgs;
+using namespace geometry_msgs;
 using namespace darknet_ros_msgs;
 using namespace std;
 using namespace ros;
@@ -35,6 +39,9 @@ private:
     Publisher detectionPub;
     ServiceClient pclDistClient;
     ServiceClient pclNaNClient;
+    map<string, PoseStamped> objectMap;
+    tf2_ros::Buffer tfBuffer;
+
 
     /**
      * Function which gets a PointCloud<PointXYZ> and a BoundingBoxes (Yolo detection) object, when there is a detection
@@ -81,7 +88,24 @@ private:
 
                         if (pclDistClient.call(pclDistance)) {
                             pos.distance = pclDistance.response.distance;
-                            detectionPub.publish(pos);
+                            PoseStamped ps;
+
+                            ps.header.frame_id = "base_footprint"; // TODO magic value (change to argument in launch file?)
+                            ps.header.stamp = Time::now();
+
+                            ps.pose.position.x = pos.x;
+                            ps.pose.position.y = pos.y;
+                            ps.pose.position.z = pos.z;
+                            try
+                            {
+                                // Transform het naar het de global frame_id
+                                auto transformed = tfBuffer.transform(poseStamped, "map", Duration(1.0));
+                                pair <string, PoseStamped> pair(position.type, transformed);
+                                objectMap.insert(pair);
+                            }
+                            catch(tf2::TransformException &ex){
+                                ROS_WARN("The transformation for the vision object went wrong: %s", ex.what());
+                            }
                         } else {
                             ROS_ERROR("Could not reach pclDistance service client.");
                         }
@@ -105,11 +129,11 @@ private:
 
 
 public:
-    explicit VisionMiddleware(NodeHandle
-                              &n) : pclSub(n, "/vision/point_cloud", MAX_QUEUE_SIZE),
-                                    yoloSub(n, "/darknet_ros/bounding_boxes", MAX_QUEUE_SIZE),
-                                    detectionObjectSub(n, "/speech/detect", MAX_QUEUE_SIZE),
-                                    synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
+    explicit VisionMiddleware(NodeHandle &n):
+        pclSub(n, "/vision/point_cloud", MAX_QUEUE_SIZE),
+        yoloSub(n, "/darknet_ros/bounding_boxes", MAX_QUEUE_SIZE),
+        detectionObjectSub(n, "/speech/detect", MAX_QUEUE_SIZE),
+        synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
         synchronizer.registerCallback(boost::bind(&VisionMiddleware::recognitionCallback, this, _1, _2));
         detectionObjectSub.registerCallback(&VisionMiddleware::detectionObjectCallback, this);
         detectionPub = n.advertise<ObjectPosition>("/vision/object_detection", MAX_QUEUE_SIZE);
