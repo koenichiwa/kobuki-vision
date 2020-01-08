@@ -35,7 +35,7 @@ def callback(data):
 
 #init threaded ROS node so that it doesnt conflict with flask
 threading.Thread(target=lambda: rospy.init_node("Object_listener", disable_signals=True, anonymous=True)).start()
-sub = rospy.Subscriber("/vision/object_position", ObjectPosition, callback=callback)
+sub = rospy.Subscriber("/vision/object_detection", ObjectPosition, callback=callback)
 
 #init  flask app and empty list for objects
 app = Flask(__name__)
