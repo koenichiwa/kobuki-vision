@@ -72,8 +72,8 @@ private:
                         pos.z = pxyz.z;
                         pos.time = now;
                         pos.type = foundName;
-                        pos.height = DeltaY;
-                        pos.width = DeltaX;
+                        pos.height = (DeltaY * 0.0019) * 2.54;
+                        pos.width = (DeltaX * 0.0019) * 2.54;
 
                         PclDistance pclDistance;
                         pclDistance.request.x = pxyz.x;
