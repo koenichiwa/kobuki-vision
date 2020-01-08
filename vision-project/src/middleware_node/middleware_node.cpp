@@ -51,6 +51,8 @@ private:
 
             //check if what we found is what we need to detect and the probability is high enough
             if (foundName == detectedName) {
+                long DeltaX = box.xmax - box.xmin;
+                long DeltaY = box.ymax - box.ymin;
                 long middleX = (box.xmax + box.xmin) / 2;
                 long middleY = (box.ymax + box.ymin) / 2;
                 PointXYZ pxyz = pcl->at((int) middleX, (int) middleY);
@@ -70,6 +72,8 @@ private:
                         pos.z = pxyz.z;
                         pos.time = now;
                         pos.type = foundName;
+                        pos.height = DeltaY;
+                        pos.width = DeltaX;
 
                         PclDistance pclDistance;
                         pclDistance.request.x = pxyz.x;

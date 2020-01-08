@@ -2,5 +2,7 @@ float32 x
 float32 y
 float32 z
 float32 distance
+float32 height
+float32 width
 time time
 string type

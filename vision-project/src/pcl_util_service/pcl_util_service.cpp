@@ -10,9 +10,9 @@ using namespace ros;
 /**
  * @author Bo Sterenborg
  *
- * Calculates the to a given object, by x, y and z axis.
+ * Calculates the distance to a given object, by x, y and z axis.
  * @param req = request object.
- * @param res = resposnse object.
+ * @param res = response object.
  * @return
  */
 bool calculatePCLDistance(PclDistance::Request &req, PclDistance::Response &res) {
