@@ -33,7 +33,7 @@ where **${object}** is the object you'd like to detect. See all available object
 When Kobuki Vision detects a given object to detect, it will publish it on a specific topic.
 To listen to this topic, run:
 ```Bash
-rostopic echo /vision/object_position
+rostopic echo /vision/object_detection
 ```
 Note: when you have **not** set any object to detect, Kobuki Vision won't publish anything. 
 
