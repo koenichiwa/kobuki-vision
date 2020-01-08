@@ -16,8 +16,8 @@ set(MIDDLEWARE_NODE_SRC src/middleware_node/middleware_node.cpp)
 set(PCL_UTIL_SERVICE_SRC src/pcl_util_service/pcl_util_service.cpp)
 
 
-add_message_files(FILES ObjectPosition.msg)
-add_service_files(FILES PclDistance.srv PclContainsNaN.srv)
+#add_message_files(FILES ObjectPosition.msg)
+add_service_files(FILES PclDistance.srv PclContainsNaN.srv ObjectPosition.srv)
 generate_messages(
         DEPENDENCIES
         std_msgs

@@ -6,17 +6,14 @@
 #include <vision/ObjectPosition.h>
 #include <vision/PclDistance.h>
 #include <vision/PclContainsNaN.h>
-#include "geometry_msgs/PoseStamped.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#include "tf2_ros/transform_listener.h"
 
 #define ASTRA_FPS 30
 #define MAX_QUEUE_SIZE 1
+#define THRESHOLD 0.7
 
 using namespace ros;
 using namespace message_filters;
 using namespace sensor_msgs;
-using namespace geometry_msgs;
 using namespace darknet_ros_msgs;
 using namespace std;
 using namespace ros;
@@ -30,17 +27,21 @@ using namespace vision;
  */
 class VisionMiddleware {
 private:
-    string detectedName = "";
+    class ObjectPositionEntry {
+    public:
+        float x, y, z, distance, height, width;
+        Time time;
+        string type;
+    };
+
     typedef sync_policies::ApproximateTime<PointCloud<PointXYZ>, BoundingBoxes> syncPolicy;
     message_filters::Subscriber<PointCloud<PointXYZ>> pclSub;
-    message_filters::Subscriber<String> detectionObjectSub;
     message_filters::Subscriber<BoundingBoxes> yoloSub;
     Synchronizer<syncPolicy> synchronizer;
-    Publisher detectionPub;
     ServiceClient pclDistClient;
     ServiceClient pclNaNClient;
-    map<string, PoseStamped> objectMap;
-    tf2_ros::Buffer tfBuffer;
+    map<string, ObjectPositionEntry> objectMap;
+    ServiceServer objectPositionService;
 
 
     /**
@@ -57,9 +58,9 @@ private:
             string foundName = box.Class;
 
             //check if what we found is what we need to detect and the probability is high enough
-            if (foundName == detectedName) {
-                long DeltaX = box.xmax - box.xmin;
-                long DeltaY = box.ymax - box.ymin;
+            if (box.probability >= THRESHOLD) {
+                float DeltaX = box.xmax - box.xmin;
+                float DeltaY = box.ymax - box.ymin;
                 long middleX = (box.xmax + box.xmin) / 2;
                 long middleY = (box.ymax + box.ymin) / 2;
                 PointXYZ pxyz = pcl->at((int) middleX, (int) middleY);
@@ -72,77 +73,64 @@ private:
                 if (pclNaNClient.call(pclContainsNaN)) {
                     if (!pclContainsNaN.response.isNaN) {
                         stringstream ss;
-
-                        ObjectPosition pos;
-                        pos.x = pxyz.x;
-                        pos.y = pxyz.y;
-                        pos.z = pxyz.z;
-                        pos.time = now;
-                        pos.type = foundName;
-                        pos.height = DeltaY;
-                        pos.width = DeltaX;
-
                         PclDistance pclDistance;
                         pclDistance.request.x = pxyz.x;
                         pclDistance.request.z = pxyz.z;
 
                         if (pclDistClient.call(pclDistance)) {
-                            pos.distance = pclDistance.response.distance;
-                            PoseStamped ps;
-
-                            ps.header.frame_id = "base_footprint"; // TODO magic value (change to argument in launch file?)
-                            ps.header.stamp = Time::now();
-
-                            ps.pose.position.x = pos.x;
-                            ps.pose.position.y = pos.y;
-                            ps.pose.position.z = pos.z;
-                            try
-                            {
-                                // Transform het naar het de global frame_id
-                                auto transformed = tfBuffer.transform(poseStamped, "map", Duration(1.0));
-                                pair <string, PoseStamped> pair(position.type, transformed);
-                                objectMap.insert(pair);
-                            }
-                            catch(tf2::TransformException &ex){
-                                ROS_WARN("The transformation for the vision object went wrong: %s", ex.what());
-                            }
+                            ObjectPositionEntry entry;
+                            entry.x = pxyz.x;
+                            entry.z = pxyz.z;
+                            entry.y = pxyz.y;
+                            entry.distance = pclDistance.response.distance;
+                            entry.type = foundName;
+                            entry.time = Time::now();
+                            entry.width = DeltaX;
+                            entry.height = DeltaY;
+                            pair<string, ObjectPositionEntry> pair(foundName, entry);
+                            objectMap.insert(pair);
                         } else {
                             ROS_ERROR("Could not reach pclDistance service client.");
                         }
+
                     }
-                } else {
+                }else {
                     ROS_ERROR("Could not reach pclNan service client.");
                 }
             }
         }
     }
 
-    /**
-     * Listen to the topic which makes it able to detect a specific object.
-     * @param toDetect = String representation of detection object.
-     */
-    void detectionObjectCallback(const StringConstPtr &toDetect) {
-        string d = toDetect.get()->data;
-        ROS_INFO_STREAM("Speech team requested to detect a(n) " << d);
-        this->detectedName = d;
+    bool getObjectPosition(ObjectPosition::Request &req, ObjectPosition::Response &res) {
+        if (objectMap.count(req.object)) {
+            ObjectPositionEntry entry = objectMap.at(req.object);
+            res.width = entry.width;
+            res.time = entry.time;
+            res.height = entry.height;
+            res.distance = entry.distance;
+            res.x = entry.x;
+            res.y = entry.y;
+            res.type = entry.type;
+            res.z = entry.z;
+            return true;
+        }
+        return false;
     }
 
 
 public:
-    explicit VisionMiddleware(NodeHandle &n):
-        pclSub(n, "/vision/point_cloud", MAX_QUEUE_SIZE),
-        yoloSub(n, "/darknet_ros/bounding_boxes", MAX_QUEUE_SIZE),
-        detectionObjectSub(n, "/speech/detect", MAX_QUEUE_SIZE),
-        synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
+    explicit VisionMiddleware(NodeHandle
+                              &n) : pclSub(n, "/vision/point_cloud", MAX_QUEUE_SIZE),
+                                    yoloSub(n, "/darknet_ros/bounding_boxes", MAX_QUEUE_SIZE),
+                                    synchronizer(syncPolicy(MAX_QUEUE_SIZE), pclSub, yoloSub) {
+
         synchronizer.registerCallback(boost::bind(&VisionMiddleware::recognitionCallback, this, _1, _2));
-        detectionObjectSub.registerCallback(&VisionMiddleware::detectionObjectCallback, this);
-        detectionPub = n.advertise<ObjectPosition>("/vision/object_detection", MAX_QUEUE_SIZE);
+        objectPositionService = n.advertiseService("visionObjectPosition", &VisionMiddleware::getObjectPosition, this);
         pclDistClient = n.serviceClient<PclDistance>("calculatePCLDistance");
         pclNaNClient = n.serviceClient<PclContainsNaN>("checkIfPCLContainsNaN");
         pclDistClient.waitForExistence();
         pclNaNClient.waitForExistence();
     }
-
 };
 
 int main(int argc, char **argv) {
